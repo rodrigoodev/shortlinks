@@ -7,9 +7,7 @@ onMounted(async () => {
   try {
     const draggableModule = await import("vuedraggable");
     VueDraggable = draggableModule.default || draggableModule.VueDraggable;
-    console.log("🔍 VueDraggable carregado:", VueDraggable);
   } catch (error) {
-    console.error("❌ Erro ao carregar VueDraggable:", error);
     // Fallback para div simples
     VueDraggable = "div";
   }
@@ -46,23 +44,16 @@ const form = ref({
 const fetchLinks = async () => {
   loading.value = true;
   try {
-    console.log("🔍 Iniciando busca de links...");
-    console.log("🔍 Profile ID:", props.profileId);
-
     const response = await $fetch("/api/links");
-    console.log("🔍 Resposta da API:", response);
 
     if (response?.success) {
       links.value = response.links;
-      console.log("✅ Links carregados:", links.value);
     } else {
-      console.log("❌ API retornou erro:", response);
       message.value =
         "❌ Erro ao carregar links: " +
         (response?.message || "Erro desconhecido");
     }
   } catch (error) {
-    console.error("Erro ao buscar links:", error);
     message.value = "❌ Erro ao carregar links";
   } finally {
     loading.value = false;
@@ -101,14 +92,7 @@ const saveLink = async () => {
       ? { ...form.value, id: editingLink.value.id }
       : { ...form.value, profile_id: props.profileId };
 
-    console.log("🔍 Salvando link...");
-    console.log("🔍 URL:", url);
-    console.log("🔍 Method:", method);
-    console.log("🔍 Body:", body);
-
     const response = await $fetch(url, { method, body });
-
-    console.log("🔍 Resposta da API:", response);
 
     if (response.success) {
       message.value = editingLink.value
@@ -121,7 +105,6 @@ const saveLink = async () => {
       message.value = "❌ " + response.message;
     }
   } catch (error) {
-    console.error("❌ Erro ao salvar link:", error);
     message.value = "❌ Erro ao salvar link: " + error.message;
   } finally {
     saving.value = false;
@@ -162,7 +145,6 @@ const deleteLink = async (linkId) => {
       message.value = "❌ " + response.message;
     }
   } catch (error) {
-    console.error("Erro ao deletar link:", error);
     message.value = "❌ Erro ao deletar link";
   }
 
@@ -178,7 +160,6 @@ const cancelEdit = () => {
 // Reordenar links
 const reorderLinks = async () => {
   try {
-    console.log("🔄 Reordenando links...");
     const response = await $fetch("/api/links-reorder", {
       method: "POST",
       body: { links: links.value },
@@ -190,7 +171,6 @@ const reorderLinks = async () => {
       message.value = "❌ " + response.message;
     }
   } catch (error) {
-    console.error("Erro ao reordenar links:", error);
     message.value = "❌ Erro ao reordenar links";
   }
 
@@ -199,16 +179,11 @@ const reorderLinks = async () => {
 
 // Carregar links ao montar componente
 onMounted(async () => {
-  console.log("🔍 Componente LinkManager montado");
-  console.log("🔍 Profile ID no onMounted:", props.profileId);
-
   // Carregar VueDraggable primeiro
   try {
     const draggableModule = await import("vuedraggable");
     VueDraggable = draggableModule.default || draggableModule.VueDraggable;
-    console.log("🔍 VueDraggable carregado:", VueDraggable);
   } catch (error) {
-    console.error("❌ Erro ao carregar VueDraggable:", error);
     VueDraggable = "div";
   }
 

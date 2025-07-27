@@ -4,8 +4,6 @@ const { data: profileData, error } = await useFetch("/api/hello");
 
 // Buscar links do profile
 const { data: linksData, error: linksError } = await useFetch("/api/links");
-console.log("🔍 Links na página principal:", linksData.value);
-console.log("🔍 Erro dos links na página principal:", linksError.value);
 
 // Computed para acessar os dados do profile
 const profile = computed(() => profileData.value?.profile || null);
@@ -30,6 +28,97 @@ const getContrastColor = (hexColor) => {
 
   // Return black or white based on luminance
   return luminance > 0.5 ? "#000000" : "#ffffff";
+};
+
+// Lead capture form
+const leadForm = ref({
+  email: "",
+  celular: "",
+});
+
+const showLeadModal = ref(false);
+const submitting = ref(false);
+const leadMessage = ref("");
+const leadSuccess = ref(false);
+const leadError = ref(false);
+
+const closeModal = () => {
+  showLeadModal.value = false;
+  // Limpar formulário e mensagens ao fechar
+  leadForm.value.email = "";
+  leadForm.value.celular = "";
+  leadMessage.value = "";
+  leadError.value = false;
+};
+
+const copyNumber = async () => {
+  try {
+    await navigator.clipboard.writeText("12988251071");
+    // Feedback visual temporário
+    const btn = document.querySelector(".phone-btn");
+    if (btn) {
+      const originalText = btn.textContent;
+      btn.textContent = "✅ Copiado!";
+      btn.style.background = "#16a34a";
+      setTimeout(() => {
+        btn.textContent = originalText;
+        btn.style.background = "#667eea";
+      }, 2000);
+    }
+  } catch (error) {
+    // Erro silencioso ao copiar número
+  }
+};
+
+const submitLead = async () => {
+  // Validação
+  if (!leadForm.value.email && !leadForm.value.celular) {
+    leadError.value = true;
+    leadMessage.value = "Por favor, informe seu email ou celular";
+    leadSuccess.value = false;
+    return;
+  }
+
+  leadError.value = false;
+  submitting.value = true;
+  leadMessage.value = "";
+
+  try {
+    const response = await $fetch("/api/leads", {
+      method: "POST",
+      body: {
+        email: leadForm.value.email,
+        celular: leadForm.value.celular,
+        source: "footer",
+      },
+    });
+
+    if (response.success) {
+      leadSuccess.value = true;
+
+      if (response.urgency) {
+        leadMessage.value = `✅ Obrigado! Entraremos em contato em breve!
+        
+🚨 URGÊNCIA: Se precisar para agora:`;
+      } else {
+        leadMessage.value = "✅ Obrigado! Entraremos em contato em breve!";
+      }
+
+      // Limpar formulário
+      leadForm.value.email = "";
+      leadForm.value.celular = "";
+
+      // Modal permanece aberto para o usuário ler e usar os botões
+    } else {
+      leadSuccess.value = false;
+      leadMessage.value = "❌ " + response.message;
+    }
+  } catch (error) {
+    leadSuccess.value = false;
+    leadMessage.value = "❌ Erro ao enviar dados. Tente novamente.";
+  } finally {
+    submitting.value = false;
+  }
 };
 </script>
 
@@ -186,8 +275,84 @@ const getContrastColor = (hexColor) => {
       </div>
 
       <!-- Footer -->
-      <div class="mt-12 text-center opacity-60">
-        <p class="text-sm">Powered by ShortLinks</p>
+      <div class="mt-12 text-center">
+        <!-- CTA Discreto -->
+        <button @click="showLeadModal = true" class="footer-cta">
+          <span>💡</span>
+          <span>Quero meu perfil de links também!</span>
+        </button>
+
+        <div class="mt-4 opacity-60">
+          <p class="text-sm">Powered by ShortLinks</p>
+        </div>
+      </div>
+
+      <!-- Modal de Lead Capture -->
+      <div v-if="showLeadModal" class="modal-overlay" @click="closeModal">
+        <div class="modal-content" @click.stop>
+          <div class="modal-header">
+            <h3 class="modal-title">Crie seu perfil personalizado</h3>
+            <button @click="closeModal" class="modal-close">
+              <span>×</span>
+            </button>
+          </div>
+
+          <p class="modal-description">
+            Tenha sua própria página de links como esta! Deixe seus dados que
+            entraremos em contato.
+          </p>
+
+          <form @submit.prevent="submitLead" class="modal-form">
+            <div class="form-group">
+              <label class="form-label">Email *</label>
+              <input
+                v-model="leadForm.email"
+                type="email"
+                placeholder="seu@email.com"
+                class="form-input"
+                :class="{ error: leadError }"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Celular (opcional)</label>
+              <input
+                v-model="leadForm.celular"
+                type="tel"
+                placeholder="(11) 99999-9999"
+                class="form-input"
+              />
+            </div>
+
+            <button type="submit" :disabled="submitting" class="modal-button">
+              <span v-if="submitting" class="loading-spinner"></span>
+              {{ submitting ? "Enviando..." : "Quero criar meu perfil!" }}
+            </button>
+          </form>
+
+          <div
+            v-if="leadMessage"
+            class="modal-message"
+            :class="leadSuccess ? 'success' : 'error'"
+          >
+            {{ leadMessage }}
+
+            <!-- Botões de contato se for sucesso -->
+            <div v-if="leadSuccess" class="contact-buttons">
+              <a
+                href="https://wa.me/5512988251071?text=vim%20pelo%20shortlinks%20quero%20meu%20tbm"
+                target="_blank"
+                class="contact-btn whatsapp-btn"
+              >
+                📱 WhatsApp
+              </a>
+              <button @click="copyNumber" class="contact-btn phone-btn">
+                📞 Copiar telefone
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -487,5 +652,273 @@ a:active {
 .mx-auto {
   margin-left: auto;
   margin-right: auto;
+}
+
+/* Footer CTA */
+.footer-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 2rem;
+  color: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(5px);
+  opacity: 0.7;
+}
+
+.footer-cta:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  backdrop-filter: blur(5px);
+}
+
+.modal-content {
+  background: white;
+  border-radius: 1rem;
+  padding: 2rem;
+  max-width: 400px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.modal-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  transition: all 0.2s ease;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.modal-description {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.form-input {
+  padding: 0.75rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 0.5rem;
+  background: white;
+  color: #1f2937;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.form-input::placeholder {
+  color: #9ca3af;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-input.error {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.modal-button {
+  padding: 0.875rem 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.modal-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+}
+
+.modal-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.loading-spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.modal-message {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.modal-message.success {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #16a34a;
+  white-space: pre-line;
+  line-height: 1.6;
+}
+
+.modal-message.error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #dc2626;
+}
+
+.contact-buttons {
+  margin-top: 1rem;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.contact-btn {
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: none;
+  min-width: 120px;
+  justify-content: center;
+}
+
+.whatsapp-btn {
+  background: #25d366;
+  color: white;
+}
+
+.whatsapp-btn:hover {
+  background: #128c7e;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+}
+
+.phone-btn {
+  background: #667eea;
+  color: white;
+}
+
+.phone-btn:hover {
+  background: #5a67d8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* Modal Animation */
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .modal-content {
+    padding: 1.5rem;
+  }
+
+  .modal-title {
+    font-size: 1.125rem;
+  }
+
+  .modal-description {
+    font-size: 0.8rem;
+  }
 }
 </style>

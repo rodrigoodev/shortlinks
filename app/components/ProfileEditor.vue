@@ -62,7 +62,6 @@ const saveProfile = async () => {
       saveMessage.value = "❌ Erro ao salvar: " + response.message;
     }
   } catch (error) {
-    console.error("Erro ao salvar profile:", error);
     saveMessage.value = "❌ Erro ao salvar profile";
   } finally {
     saving.value = false;
@@ -73,10 +72,8 @@ const saveProfile = async () => {
 const checkTable = async () => {
   try {
     const response = await $fetch("/api/check-table");
-    console.log("Resultado da verificação:", response);
     alert("Verificação concluída! Veja o console para detalhes.");
   } catch (error) {
-    console.error("Erro ao verificar tabela:", error);
     alert("Erro ao verificar tabela");
   }
 };

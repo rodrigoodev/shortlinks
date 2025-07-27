@@ -3,7 +3,6 @@ import { turso } from '../helper/turso.js'
 export default defineEventHandler(async (event) => {
   try {
     const body = await readBody(event)
-    console.log('🔄 Reordenando links:', body)
     
     if (!body.links || !Array.isArray(body.links)) {
       return {
@@ -20,15 +19,12 @@ export default defineEventHandler(async (event) => {
       `, [i + 1, link.id])
     }
     
-    console.log('✅ Links reordenados com sucesso!')
-    
     return {
       success: true,
       message: 'Links reordenados com sucesso!'
     }
     
   } catch (error) {
-    console.error('❌ Erro ao reordenar links:', error)
     return {
       success: false,
       error: error.message,

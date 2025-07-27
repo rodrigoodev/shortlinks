@@ -3,8 +3,6 @@ import { turso } from '../helper/turso.js'
 export default defineEventHandler(async (event) => {
   try {
     const body = await readBody(event)
-    console.log('📝 Criando novo link:', body)
-    console.log('📝 Body completo:', JSON.stringify(body, null, 2))
     
     // Validações básicas
     if (!body.type || !body.link_url) {
@@ -28,7 +26,6 @@ export default defineEventHandler(async (event) => {
     `)
     
     if (tableCheck.rows.length === 0) {
-      console.log('❌ Tabela links não existe!')
       return {
         success: false,
         message: 'Tabela links não existe. Crie a tabela primeiro.'
@@ -40,9 +37,7 @@ export default defineEventHandler(async (event) => {
       SELECT MAX(order_index) as max_order FROM links WHERE profile_id = 1
     `)
     
-    console.log('🔍 Max order encontrado:', maxOrder.rows[0]?.max_order)
     const nextOrder = (maxOrder.rows[0]?.max_order || 0) + 1
-    console.log('🔍 Próximo order será:', nextOrder)
     
     // Preparar dados para inserção
     const insertData = [
@@ -57,8 +52,6 @@ export default defineEventHandler(async (event) => {
       body.border_color || null
     ]
     
-    console.log('🔍 Dados para inserção:', insertData)
-    
     // Inserir novo link
     const result = await turso.execute(`
       INSERT INTO links (
@@ -67,17 +60,6 @@ export default defineEventHandler(async (event) => {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, insertData)
     
-    console.log('✅ Link criado com sucesso!')
-    console.log('✅ Result:', result)
-    console.log('✅ LastInsertRowid:', result.lastInsertRowid)
-    
-    // Verificar se o link foi realmente inserido
-    const verifyLink = await turso.execute(`
-      SELECT * FROM links WHERE id = ?
-    `, [Number(result.lastInsertRowid)])
-    
-    console.log('🔍 Link verificado após inserção:', verifyLink.rows[0])
-    
     return {
       success: true,
       id: Number(result.lastInsertRowid),
@@ -85,8 +67,6 @@ export default defineEventHandler(async (event) => {
     }
     
   } catch (error) {
-    console.error('❌ Erro ao criar link:', error)
-    console.error('❌ Stack trace:', error.stack)
     return {
       success: false,
       error: error.message,

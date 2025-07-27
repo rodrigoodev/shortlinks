@@ -3,14 +3,6 @@ import { turso } from '../helper/turso.js'
 export default defineEventHandler(async (event) => {
   try {
     const body = await readBody(event)
-    console.log('✏️ Atualizando link:', body)
-    console.log('🔍 Campos recebidos:', Object.keys(body))
-    console.log('🔍 ID:', body.id)
-    console.log('🔍 Type:', body.type)
-    console.log('🔍 Text link:', body.text_link)
-    console.log('🔍 Link URL:', body.link_url)
-    console.log('🔍 Is active:', body.is_active)
-    console.log('🔍 Order index:', body.order_index)
     
     // Validações básicas
     if (!body.id) {
@@ -58,15 +50,12 @@ export default defineEventHandler(async (event) => {
       body.id
     ])
     
-    console.log('✅ Link atualizado com sucesso!')
-    
     return {
       success: true,
       message: 'Link atualizado com sucesso!'
     }
     
   } catch (error) {
-    console.error('❌ Erro ao atualizar link:', error)
     return {
       success: false,
       error: error.message,

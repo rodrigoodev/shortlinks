@@ -10,7 +10,6 @@ const { data: page } = await useFetch("/api/hello");
 // Computed para obter o profile_id
 const profileId = computed(() => {
   const id = page.value?.profile?.id || 1;
-  console.log("🔍 Profile ID computado:", id);
   return id;
 });
 </script>
