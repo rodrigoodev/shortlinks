@@ -195,14 +195,9 @@ onMounted(async () => {
 <template>
   <div class="link-manager">
     <!-- Header -->
-    <div class="flex justify-between items-center mb-6">
-      <h2 class="text-2xl font-bold">Gerenciar Links</h2>
-      <button
-        @click="newLink"
-        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-      >
-        ➕ Novo Link
-      </button>
+    <div class="link-manager-header">
+      <h2 class="link-manager-title">Gerenciar Links</h2>
+      <button @click="newLink" class="new-link-button">➕ Novo Link</button>
     </div>
 
     <!-- Mensagens -->
@@ -244,81 +239,67 @@ onMounted(async () => {
         class="space-y-3"
       >
         <template #item="{ element: link }">
-          <div
-            class="link-item bg-white rounded-lg p-4 shadow-md border border-gray-200"
-          >
-            <div class="flex items-center gap-3">
+          <div class="link-item">
+            <div class="link-content">
               <!-- Handle de arrasto -->
-              <div
-                class="drag-handle cursor-move text-gray-400 hover:text-gray-600"
-              >
-                ☰
-              </div>
+              <div class="drag-handle">☰</div>
 
               <!-- Preview do link -->
-              <div class="flex-1">
-                <div class="flex items-center gap-3">
+              <div class="link-preview">
+                <div class="link-info">
                   <!-- Ícone/Imagem -->
-                  <div
-                    v-if="link.image_url"
-                    class="w-8 h-8 rounded overflow-hidden"
-                  >
+                  <div v-if="link.image_url" class="link-icon">
                     <img
                       :src="link.image_url"
                       :alt="link.text_link || 'Link'"
-                      class="w-full h-full object-cover"
+                      class="icon-image"
                     />
                   </div>
 
                   <!-- Texto -->
-                  <div class="flex-1">
+                  <div class="link-text">
                     <div
-                      class="font-medium"
+                      class="link-title"
                       :title="link.type === 'text' ? link.text_link : 'Imagem'"
                     >
                       {{
                         link.type === "text"
-                          ? truncateText(link.text_link, 30)
+                          ? truncateText(link.text_link, 20)
                           : "Imagem"
                       }}
                     </div>
-                    <div class="text-sm text-gray-500" :title="link.link_url">
-                      {{ truncateText(link.link_url, 40) }}
+                    <div class="link-url" :title="link.link_url">
+                      {{ truncateText(link.link_url, 25) }}
                     </div>
                   </div>
 
                   <!-- Status -->
-                  <div class="flex items-center gap-2">
+                  <div class="link-status">
                     <span
-                      :class="
-                        link.is_active
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-gray-100 text-gray-800'
-                      "
-                      class="px-2 py-1 rounded-full text-xs font-medium"
+                      :class="[
+                        'status-badge',
+                        link.is_active ? 'active' : 'inactive',
+                      ]"
                     >
                       {{ link.is_active ? "Ativo" : "Inativo" }}
                     </span>
-
-                    <span class="text-xs text-gray-400">
-                      #{{ link.order_index }}
-                    </span>
+                    <span class="order-number">#{{ link.order_index }}</span>
                   </div>
                 </div>
               </div>
 
               <!-- Ações -->
-              <div class="flex gap-2">
+              <div class="link-actions">
                 <button
                   @click="editLink(link)"
-                  class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                  class="action-button edit"
                   title="Editar"
                 >
                   ✏️
                 </button>
                 <button
                   @click="deleteLink(link.id)"
-                  class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  class="action-button delete"
                   title="Deletar"
                 >
                   🗑️
@@ -331,33 +312,25 @@ onMounted(async () => {
     </div>
 
     <!-- Modal de Formulário -->
-    <div
-      v-if="showForm"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-    >
-      <div
-        class="bg-white rounded-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
-      >
-        <h3 class="text-xl font-bold mb-4">
+    <div v-if="showForm" class="modal-overlay">
+      <div class="modal-content">
+        <h3 class="modal-title">
           {{ editingLink ? "Editar Link" : "Novo Link" }}
         </h3>
 
-        <form @submit.prevent="saveLink" class="space-y-4">
+        <form @submit.prevent="saveLink" class="link-form">
           <!-- Tipo do Link -->
-          <div>
-            <label class="block text-sm font-medium mb-2">Tipo do Link</label>
-            <select
-              v-model="form.type"
-              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
+          <div class="form-group">
+            <label class="form-label">Tipo do Link</label>
+            <select v-model="form.type" class="form-input">
               <option value="text">Texto com Ícone</option>
               <option value="image">Imagem Completa</option>
             </select>
           </div>
 
           <!-- URL da Imagem -->
-          <div>
-            <label class="block text-sm font-medium mb-2">
+          <div class="form-group">
+            <label class="form-label">
               {{ form.type === "text" ? "URL do Ícone" : "URL da Imagem" }}
             </label>
             <input
@@ -368,36 +341,36 @@ onMounted(async () => {
                   ? 'https://exemplo.com/icone.png'
                   : 'https://exemplo.com/imagem.jpg'
               "
-              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              class="form-input"
             />
           </div>
 
           <!-- Texto (apenas para tipo text) -->
-          <div v-if="form.type === 'text'">
-            <label class="block text-sm font-medium mb-2">Texto</label>
+          <div v-if="form.type === 'text'" class="form-group">
+            <label class="form-label">Texto</label>
             <input
               v-model="form.text_link"
               type="text"
               placeholder="Ex: Fale conosco no WhatsApp"
               required
-              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              class="form-input"
             />
           </div>
 
           <!-- URL de Destino -->
-          <div>
-            <label class="block text-sm font-medium mb-2">URL de Destino</label>
+          <div class="form-group">
+            <label class="form-label">URL de Destino</label>
             <input
               v-model="form.link_url"
               type="url"
               placeholder="https://exemplo.com"
               required
-              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              class="form-input"
             />
           </div>
 
           <!-- Cores -->
-          <div class="grid grid-cols-2 gap-4">
+          <div class="form-colors">
             <div>
               <label class="block text-sm font-medium mb-2">Cor de Fundo</label>
               <input
@@ -468,19 +441,15 @@ onMounted(async () => {
           </div>
 
           <!-- Botões -->
-          <div class="flex gap-3 pt-4">
+          <div class="form-buttons">
             <button
               type="button"
               @click="cancelEdit"
-              class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              class="form-button cancel"
             >
               Cancelar
             </button>
-            <button
-              type="submit"
-              :disabled="saving"
-              class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-            >
+            <button type="submit" :disabled="saving" class="form-button save">
               {{ saving ? "Salvando..." : editingLink ? "Atualizar" : "Criar" }}
             </button>
           </div>
@@ -491,412 +460,420 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-/* Animações */
-.animate-spin {
+/* Link Manager Principal */
+.link-manager {
+  width: 100%;
+}
+
+/* Header do Link Manager */
+.link-manager-header {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.link-manager-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.new-link-button {
+  width: 100%;
+  padding: 0.5rem 1rem;
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.new-link-button:hover {
+  background-color: #1d4ed8;
+}
+
+/* Cards dos Links */
+.link-item {
+  background-color: #ffffff;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+}
+
+.link-content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Handle de arrasto */
+.drag-handle {
+  cursor: move;
+  color: #9ca3af;
+  font-size: 0.875rem;
+  transition: color 0.2s ease;
+}
+
+.drag-handle:hover {
+  color: #6b7280;
+}
+
+/* Preview do link */
+.link-preview {
+  flex: 1;
+  min-width: 0;
+}
+
+.link-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Ícone do link */
+.link-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 0.25rem;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.icon-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Texto do link */
+.link-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.link-title {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: #111827;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.link-url {
+  font-size: 0.75rem;
+  color: #6b7280;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Status do link */
+.link-status {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.status-badge {
+  padding: 0.125rem 0.25rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-badge.active {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.status-badge.inactive {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.order-number {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  display: none;
+}
+
+/* Ações do link */
+.link-actions {
+  display: flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.action-button {
+  padding: 0.375rem;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-size: 0.875rem;
+}
+
+.action-button.edit {
+  color: #2563eb;
+}
+
+.action-button.edit:hover {
+  background-color: #eff6ff;
+}
+
+.action-button.delete {
+  color: #dc2626;
+}
+
+.action-button.delete:hover {
+  background-color: #fef2f2;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem;
+  z-index: 50;
+}
+
+.modal-content {
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  width: 100%;
+  max-width: 28rem;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.75rem;
+}
+
+/* Formulário */
+.link-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.form-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.625rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.form-colors {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+.form-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+}
+
+.form-button {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.form-button.cancel {
+  background-color: #ffffff;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.form-button.cancel:hover {
+  background-color: #f9fafb;
+}
+
+.form-button.save {
+  background-color: #2563eb;
+  color: white;
+}
+
+.form-button.save:hover {
+  background-color: #1d4ed8;
+}
+
+.form-button.save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Loading */
+.loading-spinner {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid #f3f4f6;
+  border-top: 2px solid #2563eb;
+  border-radius: 50%;
   animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-  from {
+  0% {
     transform: rotate(0deg);
   }
-  to {
+  100% {
     transform: rotate(360deg);
   }
 }
 
-/* Transições */
-.transition-colors {
-  transition-property: color, background-color, border-color,
-    text-decoration-color, fill, stroke;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
-}
-
-/* Layout */
-.flex {
-  display: flex;
-}
-
-.flex-1 {
-  flex: 1 1 0%;
-}
-
-.items-center {
-  align-items: center;
-}
-
-.justify-center {
-  justify-content: center;
-}
-
-.justify-between {
-  justify-content: space-between;
-}
-
-.text-center {
-  text-align: center;
-}
-
-/* Grid */
-.grid {
-  display: grid;
-}
-
-.grid-cols-2 {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.gap-2 {
-  gap: 0.5rem;
-}
-
-.gap-3 {
-  gap: 0.75rem;
-}
-
-.gap-4 {
-  gap: 1rem;
-}
-
-/* Espaçamento */
-.space-y-3 > * + * {
-  margin-top: 0.75rem;
-}
-
-.space-y-4 > * + * {
-  margin-top: 1rem;
-}
-
-.mb-2 {
-  margin-bottom: 0.5rem;
-}
-
-.mb-4 {
-  margin-bottom: 1rem;
-}
-
-.mb-6 {
-  margin-bottom: 1.5rem;
-}
-
-.p-3 {
-  padding: 0.75rem;
-}
-
-.p-4 {
-  padding: 1rem;
-}
-
-.p-6 {
-  padding: 1.5rem;
-}
-
-.pt-4 {
-  padding-top: 1rem;
-}
-
-.py-8 {
-  padding-top: 2rem;
-  padding-bottom: 2rem;
-}
-
-.px-4 {
-  padding-left: 1rem;
-  padding-right: 1rem;
-}
-
-.py-2 {
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
-}
-
-/* Bordas */
-.rounded {
-  border-radius: 0.25rem;
-}
-
-.rounded-lg {
-  border-radius: 0.5rem;
-}
-
-.rounded-xl {
-  border-radius: 0.75rem;
-}
-
-.rounded-full {
-  border-radius: 9999px;
-}
-
-.border {
-  border-width: 1px;
-}
-
-.border-2 {
-  border-width: 2px;
-}
-
-.border-gray-200 {
-  border-color: #e5e7eb;
-}
-
-.border-gray-300 {
-  border-color: #d1d5db;
-}
-
-.border-blue-600 {
-  border-color: #2563eb;
-}
-
-.border-b-2 {
-  border-bottom-width: 2px;
-}
-
-/* Cores */
-.bg-white {
-  background-color: #ffffff;
-}
-
-.bg-blue-600 {
-  background-color: #2563eb;
-}
-
-.bg-gray-50 {
-  background-color: #f9fafb;
-}
-
-.bg-gray-100 {
-  background-color: #f3f4f6;
-}
-
-.bg-gray-200 {
-  background-color: #e5e7eb;
-}
-
-.bg-green-100 {
-  background-color: #dcfce7;
-}
-
-.bg-black {
-  background-color: #000000;
-}
-
-.text-gray-400 {
-  color: #9ca3af;
-}
-
-.text-gray-500 {
-  color: #6b7280;
-}
-
-.text-gray-700 {
-  color: #374151;
-}
-
-.text-blue-600 {
-  color: #2563eb;
-}
-
-.text-red-600 {
-  color: #dc2626;
-}
-
-.text-green-800 {
-  color: #166534;
-}
-
-.text-gray-800 {
-  color: #1f2937;
-}
-
-.text-white {
-  color: #ffffff;
-}
-
-/* Sombras */
-.shadow-md {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06);
-}
-
-/* Texto */
-.text-2xl {
-  font-size: 1.5rem;
-}
-
-.text-xl {
-  font-size: 1.25rem;
-}
-
-.text-sm {
-  font-size: 0.875rem;
-}
-
-.text-xs {
-  font-size: 0.75rem;
-}
-
-.font-medium {
-  font-weight: 500;
-}
-
-.font-bold {
-  font-weight: 700;
-}
-
-/* Texto truncado */
-.font-medium {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.text-sm {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Hover */
-.hover\:bg-blue-700:hover {
-  background-color: #1d4ed8;
-}
-
-.hover\:bg-blue-50:hover {
-  background-color: #eff6ff;
-}
-
-.hover\:bg-red-50:hover {
-  background-color: #fef2f2;
-}
-
-.hover\:bg-gray-50:hover {
-  background-color: #f9fafb;
-}
-
-/* Focus */
-.focus\:ring-2:focus {
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
-}
-
-.focus\:ring-blue-500:focus {
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
-}
-
-.focus\:border-transparent:focus {
-  border-color: transparent;
-}
-
-/* Disabled */
-.disabled\:opacity-50:disabled {
-  opacity: 0.5;
-}
-
-/* Dimensões */
-.w-4 {
-  width: 1rem;
-}
-
-.h-4 {
-  height: 1rem;
-}
-
-.w-6 {
-  width: 1.5rem;
-}
-
-.h-6 {
-  height: 1.5rem;
-}
-
-.w-8 {
-  width: 2rem;
-}
-
-.h-8 {
-  height: 2rem;
-}
-
-.w-full {
-  width: 100%;
-}
-
-.h-10 {
-  height: 2.5rem;
-}
-
-.h-32 {
-  height: 8rem;
-}
-
-.max-w-md {
-  max-width: 28rem;
-}
-
-.max-h-\[90vh\] {
-  max-height: 90vh;
-}
-
-/* Posicionamento */
-.fixed {
-  position: fixed;
-}
-
-.inset-0 {
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-}
-
-.z-50 {
-  z-index: 50;
-}
-
-/* Opacidade */
-.bg-opacity-50 {
-  background-color: rgba(0, 0, 0, 0.5);
-}
-
-/* Overflow */
-.overflow-hidden {
-  overflow: hidden;
-}
-
-.overflow-y-auto {
-  overflow-y: auto;
-}
-
-/* Object fit */
-.object-cover {
-  object-fit: cover;
-}
-
-/* Display */
-.block {
-  display: block;
-}
-
-.inline-block {
-  display: inline-block;
-}
-
-/* Cursor */
-.cursor-move {
-  cursor: move;
-}
-
-/* Drag and Drop */
-.drag-handle:hover {
-  color: #4b5563;
-}
-
-.opacity-50 {
-  opacity: 0.5;
-}
-
-.shadow-lg {
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
-    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+/* Responsivo */
+@media (min-width: 640px) {
+  .link-manager-header {
+    flex-direction: row;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 1.5rem;
+  }
+
+  .link-manager-title {
+    font-size: 1.5rem;
+  }
+
+  .new-link-button {
+    width: auto;
+    font-size: 1rem;
+  }
+
+  .link-item {
+    padding: 1rem;
+  }
+
+  .link-info {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .link-icon {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .link-title {
+    font-size: 1rem;
+  }
+
+  .link-url {
+    font-size: 0.875rem;
+  }
+
+  .link-status {
+    gap: 0.5rem;
+  }
+
+  .status-badge {
+    padding: 0.25rem 0.5rem;
+  }
+
+  .order-number {
+    display: inline;
+  }
+
+  .link-actions {
+    gap: 0.5rem;
+  }
+
+  .action-button {
+    padding: 0.5rem;
+    font-size: 1rem;
+  }
+
+  .modal-overlay {
+    padding: 1rem;
+  }
+
+  .modal-content {
+    padding: 1.5rem;
+  }
+
+  .modal-title {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .link-form {
+    gap: 1rem;
+  }
+
+  .form-group {
+    gap: 0.5rem;
+  }
+
+  .form-input {
+    padding: 0.75rem;
+    font-size: 1rem;
+  }
+
+  .form-colors {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  .form-buttons {
+    flex-direction: row;
+    gap: 0.75rem;
+    padding-top: 1rem;
+  }
+
+  .form-button {
+    width: auto;
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+  }
 }
 </style>

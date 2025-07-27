@@ -15,26 +15,23 @@ const profileId = computed(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 p-6">
-    <div class="max-w-4xl mx-auto">
+  <div class="editor-links-page">
+    <div class="container">
       <!-- Header -->
-      <div class="mb-8">
-        <div class="flex items-center gap-4 mb-4">
-          <NuxtLink
-            to="/editor"
-            class="text-blue-600 hover:text-blue-700 font-medium"
-          >
+      <div class="header">
+        <div class="back-link">
+          <NuxtLink to="/editor" class="back-button">
             ← Voltar ao Editor
           </NuxtLink>
         </div>
-        <h1 class="text-3xl font-bold text-gray-900 mb-2">Gerenciar Links</h1>
-        <p class="text-gray-600">
+        <h1 class="page-title">Gerenciar Links</h1>
+        <p class="page-description">
           Crie, edite e organize os links do seu perfil
         </p>
       </div>
 
       <!-- Conteúdo Principal -->
-      <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+      <div class="main-content">
         <LinkManager :profile-id="profileId" />
       </div>
     </div>
@@ -42,108 +39,100 @@ const profileId = computed(() => {
 </template>
 
 <style scoped>
-/* Layout */
-.min-h-screen {
+/* Layout principal */
+.editor-links-page {
   min-height: 100vh;
+  background-color: #f9fafb;
+  padding: 0.75rem;
 }
 
-.max-w-4xl {
+.container {
   max-width: 56rem;
+  margin: 0 auto;
 }
 
-.mx-auto {
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.flex {
-  display: flex;
-}
-
-.items-center {
-  align-items: center;
-}
-
-.gap-4 {
-  gap: 1rem;
-}
-
-/* Espaçamento */
-.mb-2 {
-  margin-bottom: 0.5rem;
-}
-
-.mb-4 {
+/* Header */
+.header {
   margin-bottom: 1rem;
 }
 
-.mb-8 {
-  margin-bottom: 2rem;
+.back-link {
+  margin-bottom: 0.75rem;
 }
 
-.p-6 {
-  padding: 1.5rem;
-}
-
-.p-8 {
-  padding: 2rem;
-}
-
-/* Bordas */
-.rounded-2xl {
-  border-radius: 1rem;
-}
-
-.border {
-  border-width: 1px;
-}
-
-.border-gray-100 {
-  border-color: #f3f4f6;
-}
-
-/* Cores */
-.bg-gray-50 {
-  background-color: #f9fafb;
-}
-
-.bg-white {
-  background-color: #ffffff;
-}
-
-.text-gray-600 {
-  color: #4b5563;
-}
-
-.text-gray-900 {
-  color: #111827;
-}
-
-.text-blue-600 {
+.back-button {
   color: #2563eb;
+  font-weight: 500;
+  font-size: 0.875rem;
+  text-decoration: none;
+  transition: color 0.2s ease;
 }
 
-/* Sombras */
-.shadow-xl {
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
-    0 10px 10px -5px rgba(0, 0, 0, 0.04);
-}
-
-/* Hover */
-.hover\:text-blue-700:hover {
+.back-button:hover {
   color: #1d4ed8;
 }
 
-/* Texto */
-.text-3xl {
-  font-size: 1.875rem;
-}
-
-.font-medium {
-  font-weight: 500;
-}
-
-.font-bold {
+.page-title {
+  font-size: 1.25rem;
   font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+.page-description {
+  color: #4b5563;
+  font-size: 0.875rem;
+}
+
+/* Conteúdo principal */
+.main-content {
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #f3f4f6;
+  padding: 1rem;
+}
+
+/* Responsivo */
+@media (min-width: 640px) {
+  .editor-links-page {
+    padding: 1.5rem;
+  }
+
+  .header {
+    margin-bottom: 2rem;
+  }
+
+  .back-link {
+    margin-bottom: 1rem;
+  }
+
+  .back-button {
+    font-size: 1rem;
+  }
+
+  .page-title {
+    font-size: 1.5rem;
+  }
+
+  .page-description {
+    font-size: 1rem;
+  }
+
+  .main-content {
+    border-radius: 1rem;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .page-title {
+    font-size: 1.875rem;
+  }
+
+  .main-content {
+    padding: 2rem;
+  }
 }
 </style>
