@@ -183,14 +183,6 @@ const getContrastColor = (hexColor) => {
             </div>
           </div>
         </div>
-
-        <!-- Link para o Editor -->
-        <a
-          href="/editor"
-          class="block w-full p-4 rounded-xl text-center font-medium transition-all duration-200 transform hover:scale-105 hover:shadow-lg bg-black bg-opacity-10 hover:bg-opacity-20"
-        >
-          ✏️ Editar Perfil
-        </a>
       </div>
 
       <!-- Footer -->

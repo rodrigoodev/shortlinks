@@ -1,17 +1,54 @@
 <script setup>
+// Middleware de autenticação
+definePageMeta({
+  middleware: ["auth"],
+});
+
 // Buscar dados do profile
 const { data: page, error } = await useFetch("/api/hello");
+
+// Função de logout
+const logout = () => {
+  localStorage.removeItem("editor-auth");
+  navigateTo("/");
+};
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 p-6">
+  <div class="min-h-screen bg-gray-50 p-4 sm:p-6">
     <div class="max-w-4xl mx-auto">
       <!-- Header -->
-      <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-2">
-          Editor do ShortLinks
-        </h1>
-        <p class="text-gray-600">Escolha o que você gostaria de editar</p>
+      <div
+        class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 mb-6 sm:mb-8"
+      >
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+            Editor do ShortLinks
+          </h1>
+          <p class="text-gray-600 text-sm sm:text-base">
+            Escolha o que você gostaria de editar
+          </p>
+        </div>
+        <button
+          @click="logout"
+          class="flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium shadow-sm text-sm sm:text-base"
+          title="Sair do editor"
+        >
+          <svg
+            class="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+            ></path>
+          </svg>
+          Sair
+        </button>
       </div>
 
       <!-- Loading -->
@@ -32,24 +69,20 @@ const { data: page, error } = await useFetch("/api/hello");
       </div>
 
       <!-- Conteúdo Principal -->
-      <div v-else-if="page" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div v-else-if="page" class="editor-grid">
         <!-- Card do Profile -->
-        <div
-          class="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 hover:shadow-2xl transition-shadow duration-300"
-        >
+        <div class="editor-card">
           <div class="text-center">
-            <div
-              class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4"
-            >
-              <span class="text-2xl">👤</span>
+            <div class="editor-icon">
+              <span>👤</span>
             </div>
-            <h2 class="text-xl font-bold text-gray-900 mb-2">Editar Perfil</h2>
-            <p class="text-gray-600 mb-6">
+            <h2 class="editor-title">Editar Perfil</h2>
+            <p class="editor-description">
               Configure suas informações pessoais, foto e cores do perfil
             </p>
             <NuxtLink
               to="/editor/profile"
-              class="inline-block px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium transition-colors duration-200"
+              class="editor-button editor-button-blue"
             >
               Editar Perfil →
             </NuxtLink>
@@ -57,24 +90,18 @@ const { data: page, error } = await useFetch("/api/hello");
         </div>
 
         <!-- Card dos Links -->
-        <div
-          class="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 hover:shadow-2xl transition-shadow duration-300"
-        >
+        <div class="editor-card">
           <div class="text-center">
-            <div
-              class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4"
-            >
-              <span class="text-2xl">🔗</span>
+            <div class="editor-icon editor-icon-green">
+              <span>🔗</span>
             </div>
-            <h2 class="text-xl font-bold text-gray-900 mb-2">
-              Gerenciar Links
-            </h2>
-            <p class="text-gray-600 mb-6">
+            <h2 class="editor-title">Gerenciar Links</h2>
+            <p class="editor-description">
               Crie, edite e organize os links do seu perfil
             </p>
             <NuxtLink
               to="/editor/links"
-              class="inline-block px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 font-medium transition-colors duration-200"
+              class="editor-button editor-button-green"
             >
               Gerenciar Links →
             </NuxtLink>
@@ -116,6 +143,58 @@ const { data: page, error } = await useFetch("/api/hello");
   min-height: 100vh;
 }
 
+.flex {
+  display: flex;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.sm\:gap-0 {
+  gap: 0;
+}
+
+.gap-2 {
+  gap: 0.5rem;
+}
+
+.w-4 {
+  width: 1rem;
+}
+
+.w-12 {
+  width: 3rem;
+}
+
+.h-12 {
+  height: 3rem;
+}
+
+.sm\:w-16 {
+  width: 4rem;
+}
+
+.md\:w-16 {
+  width: 4rem;
+}
+
+.md\:h-16 {
+  height: 4rem;
+}
+
+.sm\:h-16 {
+  height: 4rem;
+}
+
+.h-4 {
+  height: 1rem;
+}
+
 .max-w-4xl {
   max-width: 56rem;
 }
@@ -133,22 +212,155 @@ const { data: page, error } = await useFetch("/api/hello");
   grid-template-columns: repeat(1, minmax(0, 1fr));
 }
 
+.sm\:grid-cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .lg\:grid-cols-2 {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.sm\:px-4 {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.md\:px-6 {
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+.sm\:py-2 {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.md\:py-3 {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
 }
 
 .md\:grid-cols-2 {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-/* Responsivo */
+/* Layout do Editor */
+.editor-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.editor-card {
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #f3f4f6;
+  padding: 1rem;
+  transition: box-shadow 0.3s ease;
+}
+
+.editor-card:hover {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* Desktop - duas colunas */
 @media (min-width: 768px) {
-  .md\:grid-cols-2 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .editor-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  .editor-card {
+    padding: 1.5rem;
+  }
+}
+
+/* Elementos dos cards */
+.editor-icon {
+  width: 3rem;
+  height: 3rem;
+  background-color: #dbeafe;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  font-size: 1.25rem;
+}
+
+.editor-icon-green {
+  background-color: #dcfce7;
+}
+
+.editor-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+.editor-description {
+  color: #6b7280;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+.editor-button {
+  display: inline-block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background-color: #2563eb;
+  color: white;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+  font-size: 0.875rem;
+}
+
+.editor-button:hover {
+  background-color: #1d4ed8;
+}
+
+.editor-button-green {
+  background-color: #16a34a;
+}
+
+.editor-button-green:hover {
+  background-color: #15803d;
+}
+
+/* Desktop - ajustes */
+@media (min-width: 768px) {
+  .editor-icon {
+    width: 4rem;
+    height: 4rem;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .editor-title {
+    font-size: 1.25rem;
+  }
+
+  .editor-description {
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .editor-button {
+    width: auto;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
   }
 }
 
 .gap-6 {
+  gap: 1.5rem;
+}
+
+.sm\:gap-6 {
   gap: 1.5rem;
 }
 
@@ -169,7 +381,23 @@ const { data: page, error } = await useFetch("/api/hello");
   margin-bottom: 1rem;
 }
 
+.sm\:mb-4 {
+  margin-bottom: 1rem;
+}
+
+.md\:mb-4 {
+  margin-bottom: 1rem;
+}
+
 .mb-6 {
+  margin-bottom: 1.5rem;
+}
+
+.sm\:mb-6 {
+  margin-bottom: 1.5rem;
+}
+
+.md\:mb-6 {
   margin-bottom: 1.5rem;
 }
 
@@ -177,12 +405,48 @@ const { data: page, error } = await useFetch("/api/hello");
   margin-bottom: 2rem;
 }
 
+.sm\:mb-8 {
+  margin-bottom: 2rem;
+}
+
 .p-4 {
   padding: 1rem;
 }
 
+.sm\:p-6 {
+  padding: 1.5rem;
+}
+
+.md\:p-6 {
+  padding: 1.5rem;
+}
+
+.px-4 {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.py-2 {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.px-6 {
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+.py-3 {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
 .p-6 {
   padding: 1.5rem;
+}
+
+.sm\:p-8 {
+  padding: 2rem;
 }
 
 .p-8 {
@@ -207,6 +471,14 @@ const { data: page, error } = await useFetch("/api/hello");
 /* Tamanhos */
 .w-full {
   width: 100%;
+}
+
+.sm\:w-auto {
+  width: auto;
+}
+
+.md\:w-auto {
+  width: auto;
 }
 
 .w-16 {
@@ -275,6 +547,26 @@ const { data: page, error } = await useFetch("/api/hello");
   font-size: 1.5rem;
 }
 
+.text-xl {
+  font-size: 1.25rem;
+}
+
+.sm\:text-2xl {
+  font-size: 1.5rem;
+}
+
+.md\:text-2xl {
+  font-size: 1.5rem;
+}
+
+.md\:text-xl {
+  font-size: 1.25rem;
+}
+
+.sm\:text-3xl {
+  font-size: 1.875rem;
+}
+
 /* Sombras */
 .shadow-xl {
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
@@ -294,8 +586,16 @@ const { data: page, error } = await useFetch("/api/hello");
   background-color: #15803d;
 }
 
+.hover\:bg-red-700:hover {
+  background-color: #b91c1c;
+}
+
 .hover\:shadow-2xl:hover {
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.shadow-sm {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
 /* Transições */
@@ -375,6 +675,10 @@ const { data: page, error } = await useFetch("/api/hello");
 
 .bg-red-50 {
   background-color: #fef2f2;
+}
+
+.bg-red-600 {
+  background-color: #dc2626;
 }
 
 .bg-gray-600 {
@@ -459,6 +763,14 @@ const { data: page, error } = await useFetch("/api/hello");
 
 .text-sm {
   font-size: 0.875rem;
+}
+
+.sm\:text-base {
+  font-size: 1rem;
+}
+
+.md\:text-base {
+  font-size: 1rem;
 }
 
 .font-medium {

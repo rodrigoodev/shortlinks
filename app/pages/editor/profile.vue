@@ -1,4 +1,9 @@
 <script setup>
+// Middleware de autenticação
+definePageMeta({
+  middleware: ["auth"],
+});
+
 // Buscar dados do profile
 const { data: page, error, refresh } = await useFetch("/api/hello");
 
