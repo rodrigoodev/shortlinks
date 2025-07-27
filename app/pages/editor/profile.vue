@@ -4,12 +4,35 @@ definePageMeta({
   middleware: ["auth"],
 });
 
-// Buscar dados do profile
-const { data: page, error, refresh } = await useFetch("/api/hello");
+// Obter dados do perfil autenticado
+const authData = ref(null);
+const profile = ref(null);
+
+onMounted(() => {
+  const storedAuth = localStorage.getItem("authData");
+  if (storedAuth) {
+    try {
+      const parsed = JSON.parse(storedAuth);
+      authData.value = parsed;
+      profile.value = parsed.profile;
+    } catch (error) {
+      navigateTo("/");
+    }
+  }
+});
 
 // Função para recarregar dados após salvar profile
 const handleProfileSave = async () => {
-  await refresh();
+  // Recarregar dados do localStorage
+  const storedAuth = localStorage.getItem("authData");
+  if (storedAuth) {
+    try {
+      const parsed = JSON.parse(storedAuth);
+      profile.value = parsed.profile;
+    } catch (error) {
+      navigateTo("/");
+    }
+  }
 };
 </script>
 
@@ -33,31 +56,19 @@ const handleProfileSave = async () => {
       </div>
 
       <!-- Loading -->
-      <div v-if="!page && !error" class="text-center py-12">
+      <div v-if="!profile" class="text-center py-12">
         <div
           class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"
         ></div>
         <p>Carregando dados...</p>
       </div>
 
-      <!-- Error -->
-      <div
-        v-else-if="error"
-        class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg"
-      >
-        <h3 class="text-red-800 font-medium">Erro ao carregar dados</h3>
-        <p class="text-red-600 text-sm">{{ error.message }}</p>
-      </div>
-
       <!-- Conteúdo Principal -->
       <div
-        v-else-if="page"
+        v-else-if="profile"
         class="bg-white rounded-2xl shadow-xl border border-gray-100 p-8"
       >
-        <ProfileEditor
-          :profile="page.profile"
-          @save-profile="handleProfileSave"
-        />
+        <ProfileEditor :profile="profile" @save-profile="handleProfileSave" />
       </div>
     </div>
   </div>

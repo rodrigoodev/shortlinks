@@ -4,12 +4,52 @@ definePageMeta({
   middleware: ["auth"],
 });
 
-// Buscar dados do profile
-const { data: page, error } = await useFetch("/api/hello");
+// Obter dados do perfil autenticado
+const authData = ref(null);
+const profile = ref(null);
+const isLoading = ref(true);
+
+onMounted(() => {
+  try {
+    const storedAuth = localStorage.getItem("authData");
+    if (storedAuth) {
+      const parsed = JSON.parse(storedAuth);
+
+      // Verificar se a sessão não expirou (24 horas)
+      const now = Date.now();
+      const authAge = now - parsed.timestamp;
+
+      if (authAge > 24 * 60 * 60 * 1000) {
+        localStorage.removeItem("authData");
+        navigateTo("/");
+        return;
+      }
+
+      authData.value = parsed;
+      profile.value = parsed.profile;
+    } else {
+      // Se não há dados de autenticação, redirecionar
+      navigateTo("/");
+      return;
+    }
+  } catch (error) {
+    console.error("Erro ao carregar dados de autenticação:", error);
+    localStorage.removeItem("authData");
+    navigateTo("/");
+    return;
+  } finally {
+    isLoading.value = false;
+  }
+});
+
+// Computed para obter o profile_id
+const profileId = computed(() => {
+  return profile.value?.id || null;
+});
 
 // Função de logout
 const logout = () => {
-  localStorage.removeItem("editor-auth");
+  localStorage.removeItem("authData");
   navigateTo("/");
 };
 </script>
@@ -25,6 +65,9 @@ const logout = () => {
           <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
             Editor do ShortLinks
           </h1>
+          <p v-if="profile" class="text-gray-600 text-sm sm:text-base">
+            Perfil: @{{ profile.slug }}
+          </p>
           <p class="text-gray-600 text-sm sm:text-base">
             Escolha o que você gostaria de editar
           </p>
@@ -52,24 +95,46 @@ const logout = () => {
       </div>
 
       <!-- Loading -->
-      <div v-if="!page && !error" class="text-center py-12">
+      <div v-if="isLoading" class="text-center py-12">
         <div
           class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"
         ></div>
         <p>Carregando dados...</p>
       </div>
 
-      <!-- Error -->
-      <div
-        v-else-if="error"
-        class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg"
-      >
-        <h3 class="text-red-800 font-medium">Erro ao carregar dados</h3>
-        <p class="text-red-600 text-sm">{{ error.message }}</p>
+      <!-- Erro ao carregar -->
+      <div v-else-if="!profile && !isLoading" class="text-center py-12">
+        <div class="text-red-600 mb-4">
+          <svg
+            class="w-16 h-16 mx-auto"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+            ></path>
+          </svg>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">
+          Erro ao carregar dados
+        </h3>
+        <p class="text-gray-600 mb-4">
+          Não foi possível carregar os dados do seu perfil.
+        </p>
+        <button
+          @click="logout"
+          class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          Voltar ao login
+        </button>
       </div>
 
       <!-- Conteúdo Principal -->
-      <div v-else-if="page" class="editor-grid">
+      <div v-else-if="profile && !isLoading" class="editor-grid">
         <!-- Card do Profile -->
         <div class="editor-card">
           <div class="text-center">

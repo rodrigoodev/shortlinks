@@ -44,7 +44,7 @@ const form = ref({
 const fetchLinks = async () => {
   loading.value = true;
   try {
-    const response = await $fetch("/api/links");
+    const response = await $fetch(`/api/links?profile_id=${props.profileId}`);
 
     if (response?.success) {
       links.value = response.links;

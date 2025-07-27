@@ -4,13 +4,26 @@ definePageMeta({
   middleware: ["auth"],
 });
 
-// Buscar dados do profile para o profile_id
-const { data: page } = await useFetch("/api/hello");
+// Obter dados do perfil autenticado
+const authData = ref(null);
+const profile = ref(null);
+
+onMounted(() => {
+  const storedAuth = localStorage.getItem("authData");
+  if (storedAuth) {
+    try {
+      const parsed = JSON.parse(storedAuth);
+      authData.value = parsed;
+      profile.value = parsed.profile;
+    } catch (error) {
+      navigateTo("/");
+    }
+  }
+});
 
 // Computed para obter o profile_id
 const profileId = computed(() => {
-  const id = page.value?.profile?.id || 1;
-  return id;
+  return profile.value?.id || null;
 });
 </script>
 

@@ -32,16 +32,24 @@ export default defineEventHandler(async (event) => {
       }
     }
     
+    // Validações do profile_id
+    if (!body.profile_id) {
+      return {
+        success: false,
+        message: 'Profile ID é obrigatório'
+      }
+    }
+    
     // Buscar o próximo order_index
     const maxOrder = await turso.execute(`
-      SELECT MAX(order_index) as max_order FROM links WHERE profile_id = 1
-    `)
+      SELECT MAX(order_index) as max_order FROM links WHERE profile_id = ?
+    `, [body.profile_id])
     
     const nextOrder = (maxOrder.rows[0]?.max_order || 0) + 1
     
     // Preparar dados para inserção
     const insertData = [
-      1, // profile_id fixo por enquanto
+      body.profile_id,
       body.type,
       body.image_url || null,
       body.text_link || null,

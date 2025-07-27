@@ -18,11 +18,15 @@ const form = ref({
   image_url: "",
   background_color: "#ffffff",
   slug: "",
+  password: "",
 });
 
 // Estados para feedback
 const saving = ref(false);
 const saveMessage = ref("");
+
+// Slug availability state
+const slugStatus = ref({ available: false, message: "" });
 
 // Observar mudanças nos dados e preencher formulário
 watch(
@@ -36,23 +40,172 @@ watch(
         image_url: newProfile.image_url || "",
         background_color: newProfile.background_color || "#ffffff",
         slug: newProfile.slug || "",
+        password: newProfile.password || "",
       };
+
+      // Marcar o slug atual como disponível
+      if (newProfile.slug) {
+        slugStatus.value = { available: true, message: "Instagram atual" };
+      }
     }
   },
-  { immediate: true }
+  { immediate: true, deep: true }
+);
+
+// Validação do slug
+const validateSlug = (slug) => {
+  return slug.toLowerCase().replace(/[^a-z0-9_]/g, "");
+};
+
+// Validação mais rigorosa do slug
+const isValidSlug = (slug) => {
+  // Deve ter pelo menos 3 caracteres
+  if (slug.length < 3) return false;
+
+  // Deve conter apenas letras, números e underscore
+  if (!/^[a-z0-9_]+$/.test(slug)) return false;
+
+  // Não pode começar ou terminar com underscore
+  if (slug.startsWith("_") || slug.endsWith("_")) return false;
+
+  // Não pode ter underscores consecutivos
+  if (slug.includes("__")) return false;
+
+  return true;
+};
+
+// Verificar se slug está disponível
+const checkSlugAvailability = async (slug) => {
+  if (!slug) return { available: false, message: "Digite um Instagram" };
+
+  const cleanSlug = validateSlug(slug);
+
+  // Validação rigorosa do slug
+  if (!isValidSlug(cleanSlug)) {
+    return {
+      available: false,
+      message:
+        "Instagram deve ter pelo menos 3 caracteres e conter apenas letras, números e underscore",
+    };
+  }
+
+  // Se é o slug atual do perfil, está sempre disponível
+  if (cleanSlug === props.profile?.slug) {
+    return { available: true, message: "Instagram atual" };
+  }
+
+  try {
+    const response = await $fetch(`/api/profile/${cleanSlug}`);
+
+    // Se success é true, significa que o perfil existe
+    // Se for o mesmo perfil (mesmo ID), está disponível
+    if (response.success && response.profile.id !== form.value.id) {
+      return { available: false, message: "Este Instagram já está em uso" };
+    } else {
+      return { available: true, message: "Instagram disponível!" };
+    }
+  } catch (error) {
+    // Em caso de erro na requisição, consideramos como disponível
+    return { available: true, message: "Instagram disponível!" };
+  }
+};
+
+// Watch slug changes
+watch(
+  () => form.value.slug,
+  async (newSlug) => {
+    if (newSlug) {
+      slugStatus.value = await checkSlugAvailability(newSlug);
+    } else {
+      slugStatus.value = { available: false, message: "" };
+    }
+  },
+  { debounce: 500 }
 );
 
 // Função para salvar profile
 const saveProfile = async () => {
+  // Validações
+  if (!form.value.slug) {
+    saveMessage.value = "❌ Instagram é obrigatório";
+    return;
+  }
+
+  if (!slugStatus.value.available) {
+    saveMessage.value = "❌ Escolha um Instagram disponível";
+    return;
+  }
+
   saving.value = true;
   try {
+    // Limpar espaços extras do nome
+    const cleanName = form.value.name.trim();
+    const cleanSlug = validateSlug(form.value.slug);
+
+    // Preparar dados para envio (sem senha vazia)
+    const requestData = {
+      ...form.value,
+      name: cleanName,
+      slug: cleanSlug,
+    };
+
+    // Remover senha se estiver vazia
+    if (!requestData.password || requestData.password.trim() === "") {
+      delete requestData.password;
+    }
+
     const response = await $fetch("/api/profile", {
       method: "PUT",
-      body: form.value,
+      body: requestData,
     });
 
     if (response.success) {
-      saveMessage.value = "✅ Profile salvo com sucesso!";
+      saveMessage.value =
+        "✅ Profile salvo com sucesso! Os dados foram atualizados.";
+
+      // Atualizar o localStorage com os novos dados
+      const storedAuth = localStorage.getItem("authData");
+      if (storedAuth) {
+        try {
+          const parsed = JSON.parse(storedAuth);
+          const updatedProfile = {
+            ...parsed.profile,
+            name: cleanName,
+            description: form.value.description || "",
+            image_url: form.value.image_url || "",
+            background_color: form.value.background_color || "#ffffff",
+            slug: cleanSlug,
+          };
+
+          // Atualizar senha apenas se foi fornecida
+          if (form.value.password && form.value.password.trim() !== "") {
+            updatedProfile.password = form.value.password;
+          }
+
+          localStorage.setItem(
+            "authData",
+            JSON.stringify({
+              ...parsed,
+              profile: updatedProfile,
+            })
+          );
+
+          // Atualizar o form local com os novos dados
+          form.value.name = cleanName;
+          form.value.description = form.value.description || "";
+          form.value.image_url = form.value.image_url || "";
+          form.value.background_color =
+            form.value.background_color || "#ffffff";
+          form.value.slug = cleanSlug;
+          // Manter senha apenas se foi fornecida, senão limpar o campo
+          if (!form.value.password || form.value.password.trim() === "") {
+            form.value.password = "";
+          }
+        } catch (error) {
+          console.error("Erro ao atualizar localStorage:", error);
+        }
+      }
+
       emit("save-profile");
       // Limpar mensagem após 3 segundos
       setTimeout(() => {
@@ -128,18 +281,48 @@ const checkTable = async () => {
       </div>
 
       <div>
-        <label class="block text-sm font-medium mb-2">Slug</label>
+        <label class="block text-sm font-medium mb-2">Instagram (Slug)</label>
+        <div class="relative">
+          <span
+            class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+            >@</span
+          >
+          <input
+            v-model="form.slug"
+            type="text"
+            class="w-full p-3 pl-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            :class="{ 'border-red-500': !slugStatus.available && form.slug }"
+            placeholder="seuinstagram"
+          />
+        </div>
+        <p
+          v-if="slugStatus.message"
+          class="text-xs mt-1"
+          :class="slugStatus.available ? 'text-green-600' : 'text-red-600'"
+        >
+          {{ slugStatus.message }}
+        </p>
+        <p v-else class="text-xs text-gray-500 mt-1">
+          Digite apenas o nome do seu Instagram (sem @)
+        </p>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-2">Senha</label>
         <input
-          v-model="form.slug"
-          type="text"
+          v-model="form.password"
+          type="password"
           class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          placeholder="seu-slug"
+          placeholder="Sua senha"
         />
+        <p class="text-xs text-gray-500 mt-1">
+          Senha para acessar o editor do seu perfil
+        </p>
       </div>
 
       <button
         type="submit"
-        :disabled="saving"
+        :disabled="saving || !slugStatus.available"
         class="w-full px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 font-medium shadow-lg transition-all duration-200"
       >
         {{ saving ? "Salvando..." : "Salvar Profile" }}
@@ -182,6 +365,24 @@ const checkTable = async () => {
 /* Layout */
 .w-full {
   width: 100%;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-prefix {
+  position: absolute;
+  left: 0.75rem;
+  color: #6b7280;
+  font-weight: 500;
+  z-index: 1;
+}
+
+.pl-8 {
+  padding-left: 2rem;
 }
 
 /* Espaçamento */

@@ -1,362 +1,327 @@
 <script setup>
-// Estado do formulário
-const password = ref("");
-const error = ref("");
+// Redirecionar se já estiver logado
+const router = useRouter();
+const isLoggedIn = ref(false);
+
+onMounted(() => {
+  const authData = localStorage.getItem("authData");
+  if (authData) {
+    isLoggedIn.value = true;
+    router.push("/editor");
+  }
+});
+
+// Formulário de login
+const loginForm = ref({
+  slug: "",
+  password: "",
+});
+
 const loading = ref(false);
+const error = ref("");
+
+// Validação do slug (Instagram)
+const validateSlug = (slug) => {
+  // Remove espaços e caracteres especiais, mantém apenas letras, números e underscore
+  return slug.toLowerCase().replace(/[^a-z0-9_]/g, "");
+};
 
 // Função de login
 const handleLogin = async () => {
+  if (!loginForm.value.slug || !loginForm.value.password) {
+    error.value = "Preencha todos os campos";
+    return;
+  }
+
+  // Validar formato do slug
+  const cleanSlug = validateSlug(loginForm.value.slug);
+  if (cleanSlug !== loginForm.value.slug.toLowerCase()) {
+    error.value = "O slug deve conter apenas letras, números e underscore";
+    return;
+  }
+
   loading.value = true;
   error.value = "";
 
   try {
-    // Simular delay para melhor UX
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    const response = await $fetch("/api/auth", {
+      method: "POST",
+      body: {
+        slug: cleanSlug,
+        password: loginForm.value.password,
+      },
+    });
 
-    // Verificar senha
-    if (password.value === "tailaine123") {
-      // Salvar no localStorage para manter sessão
-      localStorage.setItem("editor-auth", "true");
+    if (response.success) {
+      // Salvar dados de autenticação
+      localStorage.setItem(
+        "authData",
+        JSON.stringify({
+          profile: response.profile,
+          timestamp: Date.now(),
+        })
+      );
 
       // Redirecionar para o editor
-      await navigateTo("/editor");
+      router.push("/editor");
     } else {
-      error.value = "Senha incorreta";
+      error.value = response.message;
     }
   } catch (err) {
-    error.value = "Erro ao fazer login";
+    error.value = "Erro ao fazer login. Tente novamente.";
   } finally {
     loading.value = false;
   }
 };
-
-// Verificar se já está logado
-onMounted(() => {
-  const isAuthenticated = localStorage.getItem("editor-auth") === "true";
-  if (isAuthenticated) {
-    navigateTo("/editor");
-  }
-});
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center p-4 bg-gray-50">
-    <div class="w-full max-w-md">
-      <!-- Card de Login -->
-      <div class="bg-white rounded-2xl shadow-xl p-8">
-        <!-- Header -->
-        <div class="text-center mb-8">
-          <div
-            class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4"
-          >
-            <span class="text-2xl">🔐</span>
+  <div class="login-page">
+    <div class="login-container">
+      <div class="login-header">
+        <h1 class="login-title">Acessar Editor</h1>
+        <p class="login-description">
+          Digite seu Instagram e senha para acessar o editor do seu perfil
+        </p>
+      </div>
+
+      <form @submit.prevent="handleLogin" class="login-form">
+        <div class="form-group">
+          <label class="form-label">Instagram</label>
+          <div class="input-wrapper">
+            <span class="input-prefix">@</span>
+            <input
+              v-model="loginForm.slug"
+              type="text"
+              placeholder="seuinstagram"
+              class="form-input"
+              :class="{ error: error }"
+              required
+            />
           </div>
-          <h1 class="text-2xl font-bold text-gray-900">Acesso ao Editor</h1>
-          <p class="text-gray-600 mt-2">
-            Digite a senha para acessar o painel administrativo
+          <p class="input-help">
+            Digite apenas o nome do seu Instagram (sem @)
           </p>
         </div>
 
-        <!-- Formulário -->
-        <form @submit.prevent="handleLogin" class="space-y-6">
-          <!-- Campo de Senha -->
-          <div>
-            <label
-              for="password"
-              class="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Senha
-            </label>
-            <input
-              id="password"
-              v-model="password"
-              type="password"
-              required
-              placeholder="Digite a senha"
-              class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-              :disabled="loading"
-            />
-          </div>
-
-          <!-- Mensagem de Erro -->
-          <div
-            v-if="error"
-            class="p-3 bg-red-50 border border-red-200 rounded-lg"
-          >
-            <p class="text-red-600 text-sm">{{ error }}</p>
-          </div>
-
-          <!-- Botão de Login -->
-          <button
-            type="submit"
-            :disabled="loading || !password"
-            class="w-full p-4 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <span v-if="loading" class="flex items-center justify-center">
-              <div
-                class="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"
-              ></div>
-              Entrando...
-            </span>
-            <span v-else>Entrar no Editor</span>
-          </button>
-        </form>
-
-        <!-- Link para voltar -->
-        <div class="text-center mt-6">
-          <NuxtLink
-            to="/"
-            class="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors"
-          >
-            ← Voltar para o perfil
-          </NuxtLink>
+        <div class="form-group">
+          <label class="form-label">Senha</label>
+          <input
+            v-model="loginForm.password"
+            type="password"
+            placeholder="Sua senha"
+            class="form-input"
+            :class="{ error: error }"
+            required
+          />
         </div>
+
+        <div v-if="error" class="error-message">
+          {{ error }}
+        </div>
+
+        <button type="submit" :disabled="loading" class="login-button">
+          <span v-if="loading" class="loading-spinner"></span>
+          {{ loading ? "Entrando..." : "Entrar no Editor" }}
+        </button>
+      </form>
+
+      <div class="login-footer">
+        <p class="footer-text">Não tem um perfil ainda?</p>
+        <NuxtLink to="/" class="footer-link">
+          Solicitar criação de perfil
+        </NuxtLink>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-/* Animações */
-.animate-spin {
+.login-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  font-family: "Inter", sans-serif;
+}
+
+.login-container {
+  background: white;
+  border-radius: 1rem;
+  padding: 2rem;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.login-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+.login-description {
+  color: #6b7280;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-prefix {
+  position: absolute;
+  left: 0.75rem;
+  color: #6b7280;
+  font-weight: 500;
+  z-index: 1;
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.75rem;
+  padding-left: 1.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.form-input.error {
+  border-color: #dc2626;
+}
+
+.input-help {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+.error-message {
+  padding: 0.75rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 0.5rem;
+  color: #dc2626;
+  font-size: 0.875rem;
+}
+
+.login-button {
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.login-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+}
+
+.login-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.loading-spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
   animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-  from {
+  0% {
     transform: rotate(0deg);
   }
-  to {
+  100% {
     transform: rotate(360deg);
   }
 }
 
-/* Transições */
-.transition-colors {
-  transition-property: color, background-color, border-color,
-    text-decoration-color, fill, stroke;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
-}
-
-/* Layout */
-.min-h-screen {
-  min-height: 100vh;
-}
-
-.flex {
-  display: flex;
-}
-
-.items-center {
-  align-items: center;
-}
-
-.justify-center {
-  justify-content: center;
-}
-
-.text-center {
+.login-footer {
   text-align: center;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
 }
 
-/* Tamanhos */
-.max-w-md {
-  max-width: 28rem;
-}
-
-.w-full {
-  width: 100%;
-}
-
-.w-16 {
-  width: 4rem;
-}
-
-.h-16 {
-  height: 4rem;
-}
-
-.h-5 {
-  height: 1.25rem;
-}
-
-.w-5 {
-  width: 1.25rem;
-}
-
-/* Bordas */
-.rounded-xl {
-  border-radius: 0.75rem;
-}
-
-.rounded-2xl {
-  border-radius: 1rem;
-}
-
-.rounded-full {
-  border-radius: 9999px;
-}
-
-.border {
-  border-width: 1px;
-}
-
-.border-b-2 {
-  border-bottom-width: 2px;
-}
-
-/* Cores */
-.bg-gray-50 {
-  background-color: #f9fafb;
-}
-
-.bg-white {
-  background-color: #ffffff;
-}
-
-.bg-blue-100 {
-  background-color: #dbeafe;
-}
-
-.bg-blue-600 {
-  background-color: #2563eb;
-}
-
-.bg-red-50 {
-  background-color: #fef2f2;
-}
-
-.border-gray-300 {
-  border-color: #d1d5db;
-}
-
-.border-red-200 {
-  border-color: #fecaca;
-}
-
-.text-gray-900 {
-  color: #111827;
-}
-
-.text-gray-600 {
-  color: #4b5563;
-}
-
-.text-gray-700 {
-  color: #374151;
-}
-
-.text-blue-600 {
-  color: #2563eb;
-}
-
-.text-red-600 {
-  color: #dc2626;
-}
-
-.text-white {
-  color: #ffffff;
-}
-
-/* Sombras */
-.shadow-xl {
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
-    0 10px 10px -5px rgba(0, 0, 0, 0.04);
-}
-
-/* Padding e Margin */
-.p-4 {
-  padding: 1rem;
-}
-
-.p-3 {
-  padding: 0.75rem;
-}
-
-.p-8 {
-  padding: 2rem;
-}
-
-.mb-2 {
+.footer-text {
+  color: #6b7280;
+  font-size: 0.875rem;
   margin-bottom: 0.5rem;
 }
 
-.mb-4 {
-  margin-bottom: 1rem;
-}
-
-.mb-8 {
-  margin-bottom: 2rem;
-}
-
-.mt-2 {
-  margin-top: 0.5rem;
-}
-
-.mt-6 {
-  margin-top: 1.5rem;
-}
-
-.mr-2 {
-  margin-right: 0.5rem;
-}
-
-/* Espaçamento */
-.space-y-6 > * + * {
-  margin-top: 1.5rem;
-}
-
-/* Texto */
-.text-2xl {
-  font-size: 1.5rem;
-}
-
-.text-sm {
-  font-size: 0.875rem;
-}
-
-.font-bold {
-  font-weight: 700;
-}
-
-.font-medium {
+.footer-link {
+  color: #2563eb;
+  text-decoration: none;
   font-weight: 500;
+  font-size: 0.875rem;
+  transition: color 0.2s ease;
 }
 
-/* Focus */
-.focus\:ring-2:focus {
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
-}
-
-.focus\:ring-blue-500:focus {
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
-}
-
-.focus\:border-transparent:focus {
-  border-color: transparent;
-}
-
-/* Hover */
-.hover\:bg-blue-700:hover {
-  background-color: #1d4ed8;
-}
-
-.hover\:text-blue-700:hover {
+.footer-link:hover {
   color: #1d4ed8;
 }
 
-/* Disabled */
-.disabled\:opacity-50:disabled {
-  opacity: 0.5;
-}
+/* Responsivo */
+@media (max-width: 640px) {
+  .login-container {
+    padding: 1.5rem;
+  }
 
-.disabled\:cursor-not-allowed:disabled {
-  cursor: not-allowed;
-}
+  .login-title {
+    font-size: 1.25rem;
+  }
 
-/* Display */
-.block {
-  display: block;
+  .login-description {
+    font-size: 0.8rem;
+  }
 }
 </style>
