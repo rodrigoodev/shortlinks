@@ -2,8 +2,16 @@
 // Buscar dados do profile
 const { data: profileData, error } = await useFetch("/api/hello");
 
+// Buscar links do profile
+const { data: linksData, error: linksError } = await useFetch("/api/links");
+console.log("🔍 Links na página principal:", linksData.value);
+console.log("🔍 Erro dos links na página principal:", linksError.value);
+
 // Computed para acessar os dados do profile
 const profile = computed(() => profileData.value?.profile || null);
+
+// Computed para acessar os links
+const links = computed(() => linksData.value?.links || []);
 
 // Função para calcular cor de texto baseada na cor de fundo
 const getContrastColor = (hexColor) => {
@@ -87,16 +95,96 @@ const getContrastColor = (hexColor) => {
         </div>
       </div>
 
-      <!-- Links Section (Placeholder) -->
+      <!-- Links Section -->
       <div class="space-y-3">
-        <div class="bg-black bg-opacity-10 rounded-xl p-4 text-center">
-          <p class="font-medium">Links em breve...</p>
-          <p class="text-sm opacity-70 mt-1">
-            Aqui serão exibidos os links do perfil
-          </p>
+        <!-- Links Ativos -->
+        <div v-if="links.length > 0" class="space-y-3">
+          <a
+            v-for="link in links.filter(
+              (l) => l.is_active === 1 || l.is_active === true
+            )"
+            :key="link.id"
+            :href="link.link_url"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="block w-full rounded-xl text-center font-medium transition-all duration-200 transform hover:scale-105 hover:shadow-lg"
+            :style="{
+              backgroundColor:
+                link.background_color || 'rgba(255, 255, 255, 0.1)',
+              borderColor: link.border_color || 'transparent',
+              borderWidth: link.border_color ? '2px' : '0',
+              borderStyle: 'solid',
+            }"
+          >
+            <!-- Link do tipo text -->
+            <div
+              v-if="link.type === 'text'"
+              class="flex items-center justify-center gap-4 p-4"
+            >
+              <div
+                v-if="link.image_url"
+                class="w-5 h-5 rounded overflow-hidden flex-shrink-0"
+              >
+                <img
+                  :src="link.image_url"
+                  :alt="link.text_link"
+                  class="w-full h-full object-cover"
+                  @error="$event.target.style.display = 'none'"
+                />
+              </div>
+              <span
+                class="font-medium flex-1 text-left"
+                :style="{
+                  color: getContrastColor(
+                    link.background_color ||
+                      profile?.background_color ||
+                      '#ffffff'
+                  ),
+                }"
+                >{{ link.text_link }}</span
+              >
+            </div>
+
+            <!-- Link do tipo image -->
+            <div v-else-if="link.type === 'image'" class="p-3">
+              <div class="w-full h-24 rounded-lg overflow-hidden">
+                <img
+                  v-if="link.image_url"
+                  :src="link.image_url"
+                  :alt="link.text_link || 'Link'"
+                  class="w-full h-full object-cover"
+                  @error="$event.target.style.display = 'none'"
+                />
+                <div
+                  v-else
+                  class="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500"
+                >
+                  Imagem
+                </div>
+              </div>
+            </div>
+          </a>
         </div>
 
-        <!-- Example Link -->
+        <!-- Mensagem quando não há links -->
+        <div v-else class="bg-black bg-opacity-10 rounded-xl p-4 text-center">
+          <p class="font-medium">Nenhum link cadastrado</p>
+          <p class="text-sm opacity-70 mt-1">Adicione links no editor</p>
+
+          <!-- Debug: Mostrar todos os links -->
+          <div
+            v-if="links.length > 0"
+            class="mt-4 p-3 bg-gray-100 rounded text-left"
+          >
+            <p class="text-xs font-medium mb-2">Debug - Todos os links:</p>
+            <div v-for="link in links" :key="link.id" class="text-xs mb-1">
+              ID: {{ link.id }} | Tipo: {{ link.type }} | Ativo:
+              {{ link.is_active }} | Texto: {{ link.text_link }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Link para o Editor -->
         <a
           href="/editor"
           class="block w-full p-4 rounded-xl text-center font-medium transition-all duration-200 transform hover:scale-105 hover:shadow-lg bg-black bg-opacity-10 hover:bg-opacity-20"
@@ -174,6 +262,56 @@ const getContrastColor = (hexColor) => {
   opacity: 0.9;
 }
 
+/* Gap */
+.gap-3 {
+  gap: 0.75rem;
+}
+
+.gap-4 {
+  gap: 1rem;
+}
+
+/* Flex utilities */
+.flex-shrink-0 {
+  flex-shrink: 0;
+}
+
+.flex-1 {
+  flex: 1 1 0%;
+}
+
+/* Overflow */
+.overflow-hidden {
+  overflow: hidden;
+}
+
+/* Object fit */
+.object-cover {
+  object-fit: cover;
+}
+
+/* Target blank */
+.target-blank {
+  target: _blank;
+}
+
+/* Links sem decoração */
+a {
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: none;
+}
+
+a:visited {
+  text-decoration: none;
+}
+
+a:active {
+  text-decoration: none;
+}
+
 /* Espaçamento */
 .space-y-3 > * + * {
   margin-top: 0.75rem;
@@ -182,6 +320,18 @@ const getContrastColor = (hexColor) => {
 /* Tamanhos */
 .max-w-md {
   max-width: 28rem;
+}
+
+.w-5 {
+  width: 1.25rem;
+}
+
+.h-5 {
+  height: 1.25rem;
+}
+
+.h-24 {
+  height: 6rem;
 }
 
 .w-24 {
@@ -254,6 +404,14 @@ const getContrastColor = (hexColor) => {
   color: #ef4444;
 }
 
+.text-gray-500 {
+  color: #6b7280;
+}
+
+.bg-gray-200 {
+  background-color: #e5e7eb;
+}
+
 /* Layout */
 .min-h-screen {
   min-height: 100vh;
@@ -279,6 +437,10 @@ const getContrastColor = (hexColor) => {
   text-align: center;
 }
 
+.text-left {
+  text-align: left;
+}
+
 .block {
   display: block;
 }
@@ -288,6 +450,10 @@ const getContrastColor = (hexColor) => {
 }
 
 /* Padding e Margin */
+.p-3 {
+  padding: 0.75rem;
+}
+
 .p-4 {
   padding: 1rem;
 }
